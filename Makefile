@@ -4,7 +4,8 @@ BUILD_DIR  := .build
 BIN        := $(BUILD_DIR)/$(APP_NAME)
 APP        := $(BUILD_DIR)/$(APP_NAME).app
 FRAMEWORKS := -framework AppKit -framework ImageIO -framework UniformTypeIdentifiers \
-              -framework AVFoundation -framework CoreVideo -framework CoreMedia -framework CoreImage
+              -framework AVFoundation -framework CoreVideo -framework CoreMedia -framework CoreImage \
+              -framework ServiceManagement
 
 # NOTE: SwiftPM (`swift build`) is broken in this machine's Command Line Tools
 # (swift-package crashes on a missing framework), so we compile directly with

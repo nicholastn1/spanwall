@@ -1,5 +1,6 @@
 import AppKit
 import UniformTypeIdentifiers
+import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
@@ -32,14 +33,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func refreshMenu() {
         let menu = NSMenu()
-        menu.addItem(header("\(AppInfo.displayName) · \(AppInfo.phase)"))
+        menu.addItem(header("\(AppInfo.displayName) \(AppInfo.version)"))
         menu.addItem(header("Telas: \(controller.screenCount)  ·  no span: \(controller.spanScreenCount)"))
         menu.addItem(header("Conteúdo: \(controller.contentLabel)"))
         menu.addItem(.separator())
-        add(menu, "Escolher imagem…", #selector(chooseImage), key: "o")
         add(menu, "Escolher vídeo…", #selector(chooseVideo), key: "v")
+        add(menu, "Escolher imagem…", #selector(chooseImage), key: "o")
         add(menu, "Usar padrão de teste (régua)", #selector(useTestPattern), key: "t")
         add(menu, "Recarregar", #selector(reload), key: "r")
+        menu.addItem(.separator())
+        let loginItem = add(menu, "Iniciar no login", #selector(toggleLaunchAtLogin), key: "")
+        loginItem.state = (SMAppService.mainApp.status == .enabled) ? .on : .off
+        add(menu, "Sobre / GitHub…", #selector(openRepo), key: "")
         menu.addItem(.separator())
         add(menu, "Sair do \(AppInfo.displayName)", #selector(quit), key: "q")
         statusItem.menu = menu
@@ -51,10 +56,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return item
     }
 
-    private func add(_ menu: NSMenu, _ title: String, _ action: Selector, key: String) {
+    @discardableResult
+    private func add(_ menu: NSMenu, _ title: String, _ action: Selector, key: String) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
         item.target = self
         menu.addItem(item)
+        return item
     }
 
     // MARK: - Actions
@@ -88,4 +95,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func useTestPattern() { controller.useTestPattern(); refreshMenu() }
     @objc private func reload() { controller.rebuild(); refreshMenu() }
     @objc private func quit() { NSApp.terminate(nil) }
+
+    @objc private func toggleLaunchAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled { try service.unregister() }
+            else { try service.register() }
+        } catch {
+            NSLog("SpanWall: launch-at-login toggle failed: \(error.localizedDescription)")
+        }
+        refreshMenu()
+    }
+
+    @objc private func openRepo() {
+        if let url = URL(string: AppInfo.repoURL) { NSWorkspace.shared.open(url) }
+    }
 }

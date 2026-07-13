@@ -5,5 +5,7 @@ import Foundation
 enum AppInfo {
     static let displayName = "SpanWall"
     static let bundleIdentifier = "com.nicholas.spanwall"
+    static let version = "0.1.0-alpha"
+    static let repoURL = "https://github.com/nicholastn1/spanwall"
     static let phase = "Fase 2"
 }
