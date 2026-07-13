@@ -24,7 +24,7 @@ final class WallpaperController {
     private(set) var contentLabel = "—"
 
     func start() {
-        if CommandLine.arguments.count > 1 {
+        if CommandLine.arguments.count > 1, !CommandLine.arguments[1].hasPrefix("-") {
             applyOverride(path: CommandLine.arguments[1])
         } else {
             loadConfigured()
@@ -99,6 +99,24 @@ final class WallpaperController {
         config.mediaPath = nil
         ConfigStore.save(config)
         contentLabel = "padrão de teste (régua)"
+        rebuild()
+    }
+
+    var spanEnabled: Bool { config.spanEnabled }
+    var bezelPoints: Double { config.bezelPoints }
+
+    func setSpanEnabled(_ enabled: Bool) {
+        guard config.spanEnabled != enabled else { return }
+        config.spanEnabled = enabled
+        ConfigStore.save(config)
+        rebuild()
+    }
+
+    func setBezelPoints(_ points: Double) {
+        let clamped = max(0, points)
+        guard config.bezelPoints != clamped else { return }
+        config.bezelPoints = clamped
+        ConfigStore.save(config)
         rebuild()
     }
 

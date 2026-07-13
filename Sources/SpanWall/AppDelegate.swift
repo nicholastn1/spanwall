@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import UniformTypeIdentifiers
 import ServiceManagement
 
@@ -6,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let controller = WallpaperController()
     private var activityToken: NSObjectProtocol?
+    private var settingsWindow: NSWindow?
+    private lazy var settingsVM = SettingsViewModel(controller: controller)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Prevent App Nap from suspending video playback while we run as a
@@ -17,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.onScreensChanged = { [weak self] in self?.refreshMenu() }
         controller.start()
         refreshMenu()
+        if CommandLine.arguments.contains("--settings") { openSettings() }
     }
 
     // MARK: - Menu bar
@@ -37,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(header("Telas: \(controller.screenCount)  ·  no span: \(controller.spanScreenCount)"))
         menu.addItem(header("Conteúdo: \(controller.contentLabel)"))
         menu.addItem(.separator())
+        add(menu, "Configurações…", #selector(openSettings), key: ",")
         add(menu, "Escolher vídeo…", #selector(chooseVideo), key: "v")
         add(menu, "Escolher imagem…", #selector(chooseImage), key: "o")
         add(menu, "Usar padrão de teste (régua)", #selector(useTestPattern), key: "t")
@@ -109,5 +114,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openRepo() {
         if let url = URL(string: AppInfo.repoURL) { NSWorkspace.shared.open(url) }
+    }
+
+    @objc private func openSettings() {
+        if settingsWindow == nil {
+            let hosting = NSHostingController(rootView: SettingsView(vm: settingsVM))
+            let window = NSWindow(contentViewController: hosting)
+            window.title = AppInfo.displayName
+            window.styleMask = [.titled, .closable, .miniaturizable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            settingsWindow = window
+        }
+        settingsVM.refresh()
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow?.makeKeyAndOrderFront(nil)
     }
 }
