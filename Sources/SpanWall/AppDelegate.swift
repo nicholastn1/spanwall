@@ -68,6 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func openMainWindow() {
         if mainWindow == nil {
             let hosting = NSHostingController(rootView: MainWindowView(vm: mainVM))
+            hosting.sizingOptions = []   // don't resize the window to each section's content
             let window = NSWindow(contentViewController: hosting)
             window.title = AppInfo.displayName
             window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
