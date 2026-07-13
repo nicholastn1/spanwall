@@ -26,6 +26,7 @@ app: build
 	cp $(BIN) "$(APP)/Contents/MacOS/$(APP_NAME)"
 	cp Info.plist "$(APP)/Contents/Info.plist"
 	cp AppIcon.icns "$(APP)/Contents/Resources/AppIcon.icns"
+	codesign --force --deep --sign - "$(APP)"
 	@echo "Built $(APP)"
 
 # Build the bundle and launch it via LaunchServices.
