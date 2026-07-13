@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.start()
         refreshMenu()
         if CommandLine.arguments.contains("--window") { openMainWindow() }
+        if CommandLine.arguments.contains("--settings") { mainVM.section = .settings }
     }
 
     // MARK: - Menu bar (quick actions only; everything else lives in the window)

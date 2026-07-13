@@ -102,6 +102,14 @@ struct MainWindowView: View {
             }
         }
         .frame(minWidth: 720, minHeight: 460)
+        .toolbar {
+            ToolbarItem {
+                Button { vm.useTestPattern() } label: { Label("Padrão de teste", systemImage: "ruler") }
+            }
+            ToolbarItem {
+                Button { vm.importFiles() } label: { Label("Importar…", systemImage: "plus") }
+            }
+        }
         .onAppear { vm.refresh() }
     }
 }
@@ -137,14 +145,6 @@ private struct CatalogView: View {
             }
         }
         .navigationTitle("Catálogo")
-        .toolbar {
-            ToolbarItem {
-                Button { vm.useTestPattern() } label: { Label("Padrão de teste", systemImage: "ruler") }
-            }
-            ToolbarItem {
-                Button { vm.importFiles() } label: { Label("Importar…", systemImage: "plus") }
-            }
-        }
     }
 }
 
