@@ -22,9 +22,10 @@ build:
 
 # Assemble a proper .app bundle around the built binary.
 app: build
-	@mkdir -p "$(APP)/Contents/MacOS"
+	@mkdir -p "$(APP)/Contents/MacOS" "$(APP)/Contents/Resources"
 	cp $(BIN) "$(APP)/Contents/MacOS/$(APP_NAME)"
 	cp Info.plist "$(APP)/Contents/Info.plist"
+	cp AppIcon.icns "$(APP)/Contents/Resources/AppIcon.icns"
 	@echo "Built $(APP)"
 
 # Build the bundle and launch it via LaunchServices.
