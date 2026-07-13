@@ -10,7 +10,7 @@ final class SpanContentView: NSView {
     private let imageLayer = CALayer()
     private let displayLayer = AVSampleBufferDisplayLayer()
 
-    init(mapping: ScreenMapping) {
+    init(mapping: ScreenMapping, fit: ContentFit) {
         super.init(frame: CGRect(origin: .zero, size: mapping.screen.frame.size))
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
@@ -18,18 +18,27 @@ final class SpanContentView: NSView {
 
         let f = mapping.contentLayerFrame
         let scale = mapping.screen.backingScaleFactor
+        let (contentsGravity, videoGravity) = Self.gravities(for: fit)
 
         imageLayer.frame = f
-        imageLayer.contentsGravity = .resizeAspectFill
+        imageLayer.contentsGravity = contentsGravity
         imageLayer.contentsScale = scale
         imageLayer.masksToBounds = true
         layer?.addSublayer(imageLayer)
 
         displayLayer.frame = f
-        displayLayer.videoGravity = .resizeAspectFill
+        displayLayer.videoGravity = videoGravity
         displayLayer.masksToBounds = true
         displayLayer.isHidden = true
         layer?.addSublayer(displayLayer)
+    }
+
+    private static func gravities(for fit: ContentFit) -> (CALayerContentsGravity, AVLayerVideoGravity) {
+        switch fit {
+        case .fill:    return (.resizeAspectFill, .resizeAspectFill)
+        case .fit:     return (.resizeAspect, .resizeAspect)
+        case .stretch: return (.resize, .resize)
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("not used") }

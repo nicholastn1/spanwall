@@ -104,6 +104,21 @@ final class WallpaperController {
 
     var spanEnabled: Bool { config.spanEnabled }
     var bezelPoints: Double { config.bezelPoints }
+    var fit: ContentFit { config.fit }
+    var currentMediaPath: String? { config.mediaPath }
+
+    /// Apply a library item as the active wallpaper.
+    func apply(_ item: WallpaperItem) {
+        if item.isVideo { chooseVideo(path: item.url.path) }
+        else { chooseImage(path: item.url.path) }
+    }
+
+    func setFit(_ fit: ContentFit) {
+        guard config.fit != fit else { return }
+        config.fit = fit
+        ConfigStore.save(config)
+        rebuild()
+    }
 
     func setSpanEnabled(_ enabled: Bool) {
         guard config.spanEnabled != enabled else { return }
@@ -131,7 +146,7 @@ final class WallpaperController {
         pump?.stop()
         pump = nil
         windows.forEach { $0.orderOut(nil) }
-        windows = plan.mappings.map { WallpaperWindow(mapping: $0) }
+        windows = plan.mappings.map { WallpaperWindow(mapping: $0, fit: config.fit) }
         windows.forEach { $0.showOnScreen() }
 
         if config.contentType == .video, let url = videoURL() {

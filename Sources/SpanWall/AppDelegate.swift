@@ -1,14 +1,13 @@
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
-import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let controller = WallpaperController()
+    private let library = WallpaperLibrary()
     private var activityToken: NSObjectProtocol?
-    private var settingsWindow: NSWindow?
-    private lazy var settingsVM = SettingsViewModel(controller: controller)
+    private var mainWindow: NSWindow?
+    private lazy var mainVM = MainViewModel(controller: controller, library: library)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Prevent App Nap from suspending video playback while we run as a
@@ -17,13 +16,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             options: [.userInitiatedAllowingIdleSystemSleep],
             reason: "\(AppInfo.displayName) live wallpaper rendering")
         setUpStatusItem()
-        controller.onScreensChanged = { [weak self] in self?.refreshMenu() }
+        controller.onScreensChanged = { [weak self] in
+            self?.refreshMenu()
+            self?.mainVM.refresh()
+        }
         controller.start()
         refreshMenu()
-        if CommandLine.arguments.contains("--settings") { openSettings() }
+        if CommandLine.arguments.contains("--window") { openMainWindow() }
     }
 
-    // MARK: - Menu bar
+    // MARK: - Menu bar (quick actions only; everything else lives in the window)
 
     private func setUpStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -38,18 +40,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func refreshMenu() {
         let menu = NSMenu()
         menu.addItem(header("\(AppInfo.displayName) \(AppInfo.version)"))
-        menu.addItem(header("Telas: \(controller.screenCount)  ·  no span: \(controller.spanScreenCount)"))
         menu.addItem(header("Conteúdo: \(controller.contentLabel)"))
         menu.addItem(.separator())
-        add(menu, "Configurações…", #selector(openSettings), key: ",")
-        add(menu, "Escolher vídeo…", #selector(chooseVideo), key: "v")
-        add(menu, "Escolher imagem…", #selector(chooseImage), key: "o")
-        add(menu, "Usar padrão de teste (régua)", #selector(useTestPattern), key: "t")
+        add(menu, "Abrir SpanWall…", #selector(openMainWindow), key: "o")
         add(menu, "Recarregar", #selector(reload), key: "r")
-        menu.addItem(.separator())
-        let loginItem = add(menu, "Iniciar no login", #selector(toggleLaunchAtLogin), key: "")
-        loginItem.state = (SMAppService.mainApp.status == .enabled) ? .on : .off
-        add(menu, "Sobre / GitHub…", #selector(openRepo), key: "")
         menu.addItem(.separator())
         add(menu, "Sair do \(AppInfo.displayName)", #selector(quit), key: "q")
         statusItem.menu = menu
@@ -71,63 +65,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Actions
 
-    @objc private func chooseImage() {
-        pickFile(types: [.image], message: "Escolha a imagem ultrawide para estender pelos monitores") { [weak self] url in
-            self?.controller.chooseImage(path: url.path)
-        }
-    }
-
-    @objc private func chooseVideo() {
-        pickFile(types: [.movie, .video, .quickTimeMovie, .mpeg4Movie],
-                 message: "Escolha o vídeo para estender pelos monitores") { [weak self] url in
-            self?.controller.chooseVideo(path: url.path)
-        }
-    }
-
-    private func pickFile(types: [UTType], message: String, then handler: (URL) -> Void) {
-        NSApp.activate(ignoringOtherApps: true)
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = types
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.message = message
-        if panel.runModal() == .OK, let url = panel.url {
-            handler(url)
-            refreshMenu()
-        }
-    }
-
-    @objc private func useTestPattern() { controller.useTestPattern(); refreshMenu() }
-    @objc private func reload() { controller.rebuild(); refreshMenu() }
-    @objc private func quit() { NSApp.terminate(nil) }
-
-    @objc private func toggleLaunchAtLogin() {
-        let service = SMAppService.mainApp
-        do {
-            if service.status == .enabled { try service.unregister() }
-            else { try service.register() }
-        } catch {
-            NSLog("SpanWall: launch-at-login toggle failed: \(error.localizedDescription)")
-        }
-        refreshMenu()
-    }
-
-    @objc private func openRepo() {
-        if let url = URL(string: AppInfo.repoURL) { NSWorkspace.shared.open(url) }
-    }
-
-    @objc private func openSettings() {
-        if settingsWindow == nil {
-            let hosting = NSHostingController(rootView: SettingsView(vm: settingsVM))
+    @objc private func openMainWindow() {
+        if mainWindow == nil {
+            let hosting = NSHostingController(rootView: MainWindowView(vm: mainVM))
             let window = NSWindow(contentViewController: hosting)
             window.title = AppInfo.displayName
-            window.styleMask = [.titled, .closable, .miniaturizable]
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            window.setContentSize(NSSize(width: 840, height: 540))
             window.isReleasedWhenClosed = false
             window.center()
-            settingsWindow = window
+            mainWindow = window
         }
-        settingsVM.refresh()
+        mainVM.refresh()
         NSApp.activate(ignoringOtherApps: true)
-        settingsWindow?.makeKeyAndOrderFront(nil)
+        mainWindow?.makeKeyAndOrderFront(nil)
     }
+
+    @objc private func reload() { controller.rebuild(); refreshMenu() }
+    @objc private func quit() { NSApp.terminate(nil) }
 }

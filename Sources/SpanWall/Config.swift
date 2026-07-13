@@ -1,6 +1,7 @@
 import Foundation
 
 enum ContentType: String, Codable { case test, image, video }
+enum ContentFit: String, Codable, CaseIterable { case fill, fit, stretch }
 
 /// Persisted settings. Lives in ~/Library/Application Support/SpanWall/config.json
 /// (a plain file, so it works reliably for an unsandboxed bare executable that has
@@ -11,6 +12,7 @@ struct Config: Codable {
     var mediaPath: String? = nil
     var bezelPoints: Double = 0        // horizontal gap inserted between spanned displays
     var spanEnabled: Bool = true
+    var fit: ContentFit = .fill
 
     init() {}
 
@@ -20,6 +22,7 @@ struct Config: Codable {
         mediaPath = try? c.decode(String.self, forKey: .mediaPath)
         bezelPoints = (try? c.decode(Double.self, forKey: .bezelPoints)) ?? 0
         spanEnabled = (try? c.decode(Bool.self, forKey: .spanEnabled)) ?? true
+        fit = (try? c.decode(ContentFit.self, forKey: .fit)) ?? .fill
     }
 }
 

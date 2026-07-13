@@ -6,8 +6,8 @@ import AVFoundation
 final class WallpaperWindow: NSWindow {
     private let content: SpanContentView
 
-    init(mapping: ScreenMapping) {
-        content = SpanContentView(mapping: mapping)
+    init(mapping: ScreenMapping, fit: ContentFit) {
+        content = SpanContentView(mapping: mapping, fit: fit)
         super.init(contentRect: mapping.screen.frame,
                    styleMask: .borderless,
                    backing: .buffered,
