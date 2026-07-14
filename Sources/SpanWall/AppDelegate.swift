@@ -41,12 +41,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func refreshMenu() {
         let menu = NSMenu()
         menu.addItem(header("\(AppInfo.displayName) \(AppInfo.version)"))
-        menu.addItem(header("Conteúdo: \(controller.contentLabel)"))
+        menu.addItem(header("Content: \(controller.contentLabel)"))
         menu.addItem(.separator())
-        add(menu, "Abrir SpanWall…", #selector(openMainWindow), key: "o")
-        add(menu, "Recarregar", #selector(reload), key: "r")
+        add(menu, "Open SpanWall…", #selector(openMainWindow), key: "o")
+        add(menu, "Reload", #selector(reload), key: "r")
         menu.addItem(.separator())
-        add(menu, "Sair do \(AppInfo.displayName)", #selector(quit), key: "q")
+        add(menu, "Quit \(AppInfo.displayName)", #selector(quit), key: "q")
         statusItem.menu = menu
     }
 

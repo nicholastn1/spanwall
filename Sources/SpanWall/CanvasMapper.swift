@@ -1,5 +1,23 @@
 import AppKit
 
+extension NSScreen {
+    /// This display's CoreGraphics ID, if resolvable from the device description.
+    var displayID: CGDirectDisplayID? {
+        (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+    }
+
+    /// Logical points per physical millimeter for this display, from its EDID
+    /// physical size. `frame.width` is already in points, so this folds in the
+    /// backing scale automatically. Falls back to a 27"-class ~4.3 pt/mm when the
+    /// panel reports no physical size (e.g. some virtual or capture displays).
+    var pointsPerMillimeter: CGFloat {
+        guard let id = displayID else { return 4.3 }
+        let mm = CGDisplayScreenSize(id)   // physical active area, millimeters
+        guard mm.width > 1 else { return 4.3 }
+        return frame.width / mm.width
+    }
+}
+
 /// How one physical screen maps onto the shared virtual canvas.
 struct ScreenMapping {
     let index: Int
@@ -23,7 +41,7 @@ struct CanvasPlan {
 /// spanned screen gets a canvas-sized layer offset to its slice; other screens render
 /// independently.
 enum CanvasMapper {
-    static func plan(screens: [NSScreen], bezelPoints: CGFloat, spanEnabled: Bool) -> CanvasPlan {
+    static func plan(screens: [NSScreen], bezelMillimeters: CGFloat, spanEnabled: Bool) -> CanvasPlan {
         guard spanEnabled, screens.count >= 2 else { return independentPlan(screens) }
 
         var buckets: [String: [NSScreen]] = [:]
@@ -44,7 +62,14 @@ enum CanvasMapper {
         for (i, s) in ordered.enumerated() {
             sampleOriginX[ObjectIdentifier(s)] = cursorX
             cursorX += s.frame.width
-            if i < ordered.count - 1 { seams.append(cursorX + bezelPoints / 2); cursorX += bezelPoints }
+            if i < ordered.count - 1 {
+                // Convert the physical gap to points using the two displays bordering
+                // this seam (average their DPI to stay correct even on mixed setups).
+                let ppm = (s.pointsPerMillimeter + ordered[i + 1].pointsPerMillimeter) / 2
+                let gap = bezelMillimeters * ppm
+                seams.append(cursorX + gap / 2)
+                cursorX += gap
+            }
         }
         let canvasWidth = cursorX
         let spanSet = Set(span.map(ObjectIdentifier.init))

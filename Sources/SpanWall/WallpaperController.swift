@@ -80,7 +80,7 @@ final class WallpaperController {
         config.mediaPath = path
         ConfigStore.save(config)
         userImage = ImageLoader.load(path: path)
-        contentLabel = userImage != nil ? (path as NSString).lastPathComponent : "falhou ao carregar imagem"
+        contentLabel = userImage != nil ? (path as NSString).lastPathComponent : "failed to load image"
         rebuild()
     }
 
@@ -98,12 +98,12 @@ final class WallpaperController {
         config.contentType = .test
         config.mediaPath = nil
         ConfigStore.save(config)
-        contentLabel = "padrão de teste (régua)"
+        contentLabel = "test pattern (ruler)"
         rebuild()
     }
 
     var spanEnabled: Bool { config.spanEnabled }
-    var bezelPoints: Double { config.bezelPoints }
+    var bezelMillimeters: Double { config.bezelMillimeters }
     var fit: ContentFit { config.fit }
     var currentMediaPath: String? { config.mediaPath }
 
@@ -127,19 +127,44 @@ final class WallpaperController {
         rebuild()
     }
 
-    func setBezelPoints(_ points: Double) {
-        let clamped = max(0, points)
-        guard config.bezelPoints != clamped else { return }
-        config.bezelPoints = clamped
-        ConfigStore.save(config)
-        rebuild()
+    /// Set the physical bezel gap (millimeters). `persist == false` is the live-drag
+    /// path: it re-offsets the existing windows in place (no window/pump teardown) so
+    /// the seam moves as the user drags. `persist == true` also writes it to disk.
+    func setBezelMillimeters(_ mm: Double, persist: Bool) {
+        let clamped = max(0, mm)
+        if config.bezelMillimeters == clamped && !persist { return }
+        config.bezelMillimeters = clamped
+        if persist { ConfigStore.save(config) }
+        applyBezelLive()
+    }
+
+    private func applyBezelLive() {
+        let plan = CanvasMapper.plan(screens: NSScreen.screens,
+                                     bezelMillimeters: CGFloat(config.bezelMillimeters),
+                                     spanEnabled: config.spanEnabled)
+        spanScreenCount = plan.spanScreenCount
+        guard windows.count == plan.mappings.count else { rebuild(); return }
+        for (w, m) in zip(windows, plan.mappings) { w.updateContentFrame(m.contentLayerFrame) }
+        // Video keeps compositing via its continuous enqueue. For static content the
+        // frame change already forces a recomposite, but we re-commit the image too so
+        // a desktop-level window can't skip the repaint: the ruler must be regenerated
+        // (it encodes seam positions), and a user image is simply re-set.
+        switch config.contentType {
+        case .test:
+            let image = TestPattern.ruler(size: plan.canvasSize, seamsX: plan.seamsX)
+            windows.forEach { $0.render(image) }
+        case .image:
+            if let userImage { windows.forEach { $0.render(userImage) } }
+        case .video:
+            break
+        }
     }
 
     // MARK: - Rebuild
 
     func rebuild() {
         let plan = CanvasMapper.plan(screens: NSScreen.screens,
-                                     bezelPoints: CGFloat(config.bezelPoints),
+                                     bezelMillimeters: CGFloat(config.bezelMillimeters),
                                      spanEnabled: config.spanEnabled)
         spanScreenCount = plan.spanScreenCount
 
@@ -177,12 +202,12 @@ final class WallpaperController {
                 contentLabel = (path as NSString).lastPathComponent
             } else {
                 config.contentType = .test
-                contentLabel = "padrão de teste (régua)"
+                contentLabel = "test pattern (ruler)"
             }
         case .video:
-            contentLabel = config.mediaPath.map { ($0 as NSString).lastPathComponent } ?? "vídeo"
+            contentLabel = config.mediaPath.map { ($0 as NSString).lastPathComponent } ?? "video"
         case .test:
-            contentLabel = "padrão de teste (régua)"
+            contentLabel = "test pattern (ruler)"
         }
     }
 

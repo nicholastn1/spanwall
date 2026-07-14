@@ -33,4 +33,5 @@ final class WallpaperWindow: NSWindow {
     func render(_ image: CGImage) { content.showImage(image) }
     func enqueue(_ sampleBuffer: CMSampleBuffer) { content.enqueue(sampleBuffer) }
     func showOnScreen() { orderBack(nil) }
+    func updateContentFrame(_ frame: CGRect) { content.updateContentFrame(frame) }
 }

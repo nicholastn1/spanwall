@@ -10,7 +10,10 @@ enum ContentFit: String, Codable, CaseIterable { case fill, fit, stretch }
 struct Config: Codable {
     var contentType: ContentType = .test
     var mediaPath: String? = nil
-    var bezelPoints: Double = 0        // horizontal gap inserted between spanned displays
+    /// Physical bezel gap between spanned displays, in millimeters. Converted to
+    /// canvas points per-seam using each display's real DPI at layout time, so the
+    /// image reads as continuous "behind" the monitor borders.
+    var bezelMillimeters: Double = 0
     var spanEnabled: Bool = true
     var fit: ContentFit = .fill
 
@@ -20,7 +23,7 @@ struct Config: Codable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         contentType = (try? c.decode(ContentType.self, forKey: .contentType)) ?? .test
         mediaPath = try? c.decode(String.self, forKey: .mediaPath)
-        bezelPoints = (try? c.decode(Double.self, forKey: .bezelPoints)) ?? 0
+        bezelMillimeters = (try? c.decode(Double.self, forKey: .bezelMillimeters)) ?? 0
         spanEnabled = (try? c.decode(Bool.self, forKey: .spanEnabled)) ?? true
         fit = (try? c.decode(ContentFit.self, forKey: .fit)) ?? .fill
     }

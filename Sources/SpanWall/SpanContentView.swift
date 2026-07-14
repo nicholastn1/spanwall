@@ -43,6 +43,18 @@ final class SpanContentView: NSView {
 
     required init?(coder: NSCoder) { fatalError("not used") }
 
+    /// Re-position the canvas layer for this screen's slice without recreating the
+    /// window or restarting playback — used for live bezel adjustment. Video keeps
+    /// compositing via its continuous enqueue; a static image is re-committed so the
+    /// desktop-level window repaints at the new offset.
+    func updateContentFrame(_ frame: CGRect) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        imageLayer.frame = frame
+        displayLayer.frame = frame
+        CATransaction.commit()
+    }
+
     func showImage(_ image: CGImage) {
         displayLayer.isHidden = true
         CATransaction.begin()
